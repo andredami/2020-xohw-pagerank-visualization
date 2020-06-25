@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "d3ng": {
+    "graph-visualizer": {
       "root": "",
       "sourceRoot": "src",
       "projectType": "application",
@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/d3ng",
+            "outputPath": "dist/graph-visualizer",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
@@ -54,18 +54,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "d3ng:build"
+            "browserTarget": "graph-visualizer:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "d3ng:build:production"
+              "browserTarget": "graph-visualizer:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "d3ng:build"
+            "browserTarget": "graph-visualizer:build"
           }
         },
         "test": {
@@ -99,7 +99,7 @@
         }
       }
     },
-    "d3ng-e2e": {
+    "graph-visualizer-e2e": {
       "root": "e2e/",
       "projectType": "application",
       "architect": {
@@ -107,7 +107,7 @@
           "builder": "@angular-devkit/build-angular:protractor",
           "options": {
             "protractorConfig": "e2e/protractor.conf.js",
-            "devServerTarget": "d3ng:serve"
+            "devServerTarget": "graph-visualizer:serve"
           }
         },
         "lint": {
@@ -122,7 +122,7 @@
       }
     }
   },
-  "defaultProject": "d3ng",
+  "defaultProject": "graph-visualizer",
   "cli": {
     "defaultCollection": "@ngrx/schematics",
     "analytics": "45b578f1-87ce-4212-8c74-27bc07e76525"

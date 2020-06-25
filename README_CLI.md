@@ -1,6 +1,4 @@
-# D3ng
-
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 6.0.0.
+# Graph Visualizer (based on: D3ng)
 
 ## Development server
 
