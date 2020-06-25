@@ -1,16 +1,25 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { GraphPageComponent } from './graph-page.component';
-import { Store, StoreModule } from '@ngrx/store';
+import { provideMockStore, MockStore } from '@ngrx/store/testing';
+import { initialState as nodeInitialState } from '../../model/node/node.reducer';
+import { initialState as edgeInitialState } from '../../model/edge/edge.reducer';
 
 describe('GraphPageComponent', () => {
   let component: GraphPageComponent;
   let fixture: ComponentFixture<GraphPageComponent>;
-  let store: Store<any>;
+  let store: MockStore;
+  const initialState = {
+    node: nodeInitialState,
+    edge: edgeInitialState,
+  };
 
   beforeEach(async() => {
     TestBed.configureTestingModule({
-      imports: [ StoreModule.forRoot({}) ],
+      imports: [ ],
+      providers: [
+        provideMockStore({ initialState }),
+      ],
       declarations: [ GraphPageComponent ]
     });
 
@@ -20,7 +29,7 @@ describe('GraphPageComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(GraphPageComponent);
     component = fixture.componentInstance;
-    store = TestBed.get(Store);
+    store = TestBed.inject(MockStore);
 
     spyOn(store, 'dispatch').and.callThrough();
     fixture.detectChanges();

@@ -1,26 +1,26 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { select, Store } from '@ngrx/store';
 import { Observable, fromEvent } from 'rxjs';
 import { withLatestFrom, map } from 'rxjs/operators';
 
-import * as nodeActions from 'src/app/node.actions';
-import * as edgeActions from 'src/app/edge.actions';
+import * as nodeActions from 'src/app/model/node/node.actions';
+import * as edgeActions from 'src/app/model/edge/edge.actions';
 
-import { Node } from 'src/app/node.model';
-import { Edge } from 'src/app/edge.model';
+import { Node } from 'src/app/model/node/node.model';
+import { Edge } from 'src/app/model/edge/edge.model';
 
-import * as fromRoot from 'src/app/reducers';
+import * as fromRoot from 'src/app/model/reducers';
 
 @Component({
   selector: 'app-graph-page',
   templateUrl: './graph-page.component.html',
   styleUrls: ['./graph-page.component.css']
 })
-export class GraphPageComponent implements OnInit {
+export class GraphPageComponent implements AfterViewInit {
 
   // buttons for adding and removing nodes
-  @ViewChild('addNodeButton') addNodeButton;
-  @ViewChild('removeNodeButton') removeNodeButton;
+  @ViewChild('addNodeButton') addNodeButton: ElementRef;
+  @ViewChild('removeNodeButton') removeNodeButton: ElementRef;
 
   nodes$: Observable<Node[]>;
   edges$: Observable<Edge[]>;
@@ -41,7 +41,7 @@ export class GraphPageComponent implements OnInit {
     this.selectedNodes$ = this.store.pipe(select(fromRoot.getSelectedNodes));
   }
 
-  ngOnInit() {
+  ngAfterViewInit() {
 
     // create observable for processing add node button click
     // and subscribe and in subscription dispatch action to create additional nodes and edges
@@ -54,11 +54,11 @@ export class GraphPageComponent implements OnInit {
         const nodeCount = nodes.length;
         const edgesBefore = generateEdges(nodeCount);
         const edgesAfter = generateEdges(nodeCount + 1);
-        const additionalEdges = edgesAfter.filter(edge => !edgesBefore.map(e => e.id).includes(edge.id))
+        const additionalEdges = edgesAfter.filter(edge => !edgesBefore.map(e => e.id).includes(edge.id));
 
         this.store.dispatch(new edgeActions.AddEdges({ edges: additionalEdges }));
-        this.store.dispatch(new nodeActions.AddNode({ node: { id: String(nodes.length) } }))
-      })
+        this.store.dispatch(new nodeActions.AddNode({ node: { id: String(nodes.length) } }));
+      });
 
     // create observable for processing remove node button click
     // and subscribe and in subscription dispatch action to remove nodes and edges we want to remove
@@ -70,16 +70,16 @@ export class GraphPageComponent implements OnInit {
       .subscribe((nodes) => {
         const nodeCount = nodes.length;
 
-        if (nodeCount < 1) return;
+        if (nodeCount < 1) { return; }
 
         const edgesBefore = generateEdges(nodeCount);
         const edgesAfter = generateEdges(nodeCount - 1);
         const edgeIdsToRemove = edgesBefore.filter(edge => !edgesAfter.map(e => e.id).includes(edge.id))
-          .map(edge => edge.id)
+          .map(edge => edge.id);
 
         this.store.dispatch(new edgeActions.DeleteEdges({ ids: edgeIdsToRemove }));
-        this.store.dispatch(new nodeActions.DeleteNode({ id: String(nodeCount - 1) }))
-      })
+        this.store.dispatch(new nodeActions.DeleteNode({ id: String(nodeCount - 1) }));
+      });
   }
 
   onToggleSelection(id) {
@@ -91,7 +91,7 @@ export class GraphPageComponent implements OnInit {
 
 // some helper functions for generating the graph
 function generateNodes(n): Node[] {
-  return Array.from(Array(n).keys()).map(id => ({ id: String(id) }))
+  return Array.from(Array(n).keys()).map(id => ({ id: String(id) }));
 }
 
 function generateEdges(n): Edge[] {
@@ -99,8 +99,8 @@ function generateEdges(n): Edge[] {
   const f = (a, b) => [].concat(...a.map(d => b.map(e => [].concat(d, e))));
   const edges = f(nodes, nodes)
     .filter(edge => edge[0] < edge[1] && bitCount(edge[0] ^ edge[1]) === 1)
-    .sort((a, b) => (a[1] > b[1]) ? 1 : (a[1] === b[1] && a[0] > b[0]) ? 1 : -1)
-  return edges.map((edge, index) => ({ id: String(index), source: String(edge[0]), target: String(edge[1]) }))
+    .sort((a, b) => (a[1] > b[1]) ? 1 : (a[1] === b[1] && a[0] > b[0]) ? 1 : -1);
+  return edges.map((edge, index) => ({ id: String(index), source: String(edge[0]), target: String(edge[1]) }));
 }
 
 function bitCount(u) {

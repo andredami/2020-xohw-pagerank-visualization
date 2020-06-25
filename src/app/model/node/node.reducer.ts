@@ -56,7 +56,7 @@ export function reducer(
     }
 
     case NodeActionTypes.LoadNodes: {
-      return adapter.addAll(action.payload.nodes, state);
+      return adapter.setAll(action.payload.nodes, state);
     }
 
     case NodeActionTypes.ClearNodes: {
@@ -79,6 +79,8 @@ export function reducer(
             selectedIds: [...state.selectedIds, action.payload.id]
           };
         }
+      } else {
+        return state;
       }
     }
 
@@ -104,6 +106,6 @@ export const getSelected = createSelector(
   getSelectedIds,
   selectEntities,
   (ids, entities) => {
-    return ids.map(id => entities[id])
+    return ids.map(id => entities[id]);
   }
 );

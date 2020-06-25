@@ -50,7 +50,7 @@ export function reducer(
     }
 
     case EdgeActionTypes.LoadEdges: {
-      return adapter.addAll(action.payload.edges, state);
+      return adapter.setAll(action.payload.edges, state);
     }
 
     case EdgeActionTypes.ClearEdges: {
