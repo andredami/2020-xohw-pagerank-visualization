@@ -5,7 +5,7 @@ import { Observable } from 'rxjs';
 import { GraphEffects } from './graph.effects';
 
 describe('GraphEffects', () => {
-  let actions$: Observable<any>;
+  const actions$: Observable<any>;
   let effects: GraphEffects;
 
   beforeEach(() => {

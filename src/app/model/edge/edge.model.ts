@@ -1,5 +1,5 @@
 import { SimulationLinkDatum } from 'd3';
-import { Node } from '../node/node.model'
+import { Node } from '../node/node.model';
 
 export interface Edge extends SimulationLinkDatum<Node> {
   id: number;
