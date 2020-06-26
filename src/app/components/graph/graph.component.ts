@@ -6,6 +6,7 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewC
 import * as d3 from 'd3';
 import { Node, isNode } from 'src/app/model/node/node.model';
 import { Edge } from 'src/app/model/edge/edge.model';
+import { firstNames, lastNames } from 'src/app/model/names';
 import { forceAttract } from 'd3-force-attract';
 import { Subject, concat, of, EMPTY, Subscription } from 'rxjs';
 import { concatMap, delay } from 'rxjs/operators';
@@ -36,6 +37,8 @@ const GRAPHICS = {
   EDGE_OPACITY: 0.2,
 
   TEXT_X_OFFSET: 2,
+  NAME_Y_OFFSET: -2,
+  PROPERTY_Y_OFFSET: 10,
   DEFAULT_OPACITY: 1
 };
 
@@ -58,6 +61,9 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
   private simulation = d3.forceSimulation();
   private renderingQueue = new Subject<{action: ACTION, node: Node}>();
   private renderingSub: Subscription;
+
+  // Store "fake" names given to each vertex;
+  private namesDict = new Map();
 
   constructor() { }
 
@@ -226,20 +232,20 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
 
   private drawGraph() {
     const graph = this.getGraph();
+    const namesDict = this.namesDict;
     const selectedNodesIds = new Set(this.getGraph().selectedNodes.map(n => n.id));
     const context = this.graphContainer.nativeElement.getContext('2d');
+
+    // Define a color scale. TODO: this should be between the min and max value of pagerank found;
+    const colorRange = d3.scaleLinear()
+    .domain([0, 10]) // This should be min and max pagerank found;
+    .range([0.8, 0.2]);
 
     context.clearRect(0, 0, this.viewPort.width, this.viewPort.height);
     context.save();
 
     // Edges;
-    context.beginPath();
     graph.edges.forEach(drawLink);
-    context.lineWidth = GRAPHICS.EDGE_THICKNESS;
-    context.strokeStyle = GRAPHICS.EDGE_STYLE;
-    context.globalAlpha = GRAPHICS.EDGE_OPACITY;
-    context.stroke();
-    context.globalAlpha = GRAPHICS.DEFAULT_OPACITY;
 
     // Circles;
     graph.nodes.forEach(drawNode);
@@ -251,16 +257,38 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
     context.strokeStyle = GRAPHICS.NODE_SELECTED_STYLE;
     context.stroke();
 
+    // Write names for each node;
     context.fillStyle = 'black';
-    context.font = '16px sans-serif';
-    context.textBaseline = 'middle';
+    context.font = '14px Lato';
+    context.textBaseline = 'left';
     graph.nodes.forEach(writeText);
+    // TODO: Write PageRank label nodes that have one;
+    context.fillStyle = GRAPHICS.NODE_SELECTED_STYLE;
+    context.font = '10px Lato';
+    graph.nodes.filter(n => n.id % 2).forEach(writeProperty)
 
     context.restore();
 
+    // Nodes and edges are drawn one-at-a-time.
+    // It's probably less efficient, but it allows for different styles across nodes and edges;
+
     function drawLink(d) {
+      context.beginPath();
       context.moveTo(d[0].x, d[0].y);
       context.lineTo(d[1].x, d[1].y);
+      // Set edge style;
+      // TODO: we should add fake edges between the pagerank starting node and the top-k,
+      //   and use dashed lines if the edge doens't exist in the graph.
+      //   This can be checked in advance and stored in an edge attribute, for example;
+      if (d[0].id % 2 && d[1].id % 2) {
+        context.setLineDash([1, 3]);
+      }
+      context.lineWidth = GRAPHICS.EDGE_THICKNESS;
+      context.strokeStyle = GRAPHICS.EDGE_STYLE;
+      context.globalAlpha = GRAPHICS.EDGE_OPACITY;
+      context.stroke();
+      context.globalAlpha = GRAPHICS.DEFAULT_OPACITY;
+      context.setLineDash([]);
     }
 
     function drawNode(d: Node) {
@@ -271,10 +299,14 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
       context.stroke();
       // Fill;
       context.globalAlpha = GRAPHICS.NODE_OPACITY;
-      if (!selectedNodesIds.has(d.id)) {
-        context.fillStyle = GRAPHICS.NODE_NORMAL_STYLE;
-      } else {
+      if (selectedNodesIds.has(d.id)) {
         context.fillStyle = GRAPHICS.NODE_ROOT_COLOR;
+      } else if (d.id % 4 == 0) {
+        // TODO: this should be replaced with the PageRank value, 
+        //   i.e. color only values with pagerank using the color scale;
+        context.fillStyle = d3.interpolateReds(colorRange(d.id % 10));
+      } else {
+        context.fillStyle = GRAPHICS.NODE_NORMAL_STYLE;
       }
       context.fill();
       context.globalAlpha = GRAPHICS.DEFAULT_OPACITY;
@@ -286,10 +318,27 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
     }
 
     function writeText(d) {
-      context.fillText(d.id, d.x + GRAPHICS.NODE_R + GRAPHICS.TEXT_X_OFFSET, d.y);
+      context.fillText(getName(d.id), d.x + GRAPHICS.NODE_R + GRAPHICS.TEXT_X_OFFSET, d.y + GRAPHICS.NAME_Y_OFFSET);
+    }
+
+    function writeProperty(d) {
+      // TODO: replace with PR value
+      context.fillText((d.id / 1000).toFixed(4), d.x + GRAPHICS.NODE_R + GRAPHICS.TEXT_X_OFFSET, d.y + GRAPHICS.PROPERTY_Y_OFFSET);
+    }
+
+    // Associate a random name to each vertex;
+    function getName(nodeId: number): string {
+      // Lazily create names;
+      if (namesDict.has(nodeId)) {
+        return namesDict.get(nodeId);
+      } else {
+        // Create a new name;
+        const name = firstNames[Math.floor(Math.random() * firstNames.length)] + " " + lastNames[Math.floor(Math.random() * lastNames.length)].charAt(0) + ".";
+        namesDict.set(nodeId, name);
+        return name;
+      }
     }
   }
-
 
   private getGraph() {
     const nodes = this.simulation.nodes().filter(isNode);
@@ -304,7 +353,6 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
     }).filter(edge => edge[0] !== undefined && edge[1] !== undefined);
     return { nodes, edges, selectedNodes };
   }
-
 }
 
 function setMinusSet<T>(a: T[], b: T[], on: keyof T): T[] {
