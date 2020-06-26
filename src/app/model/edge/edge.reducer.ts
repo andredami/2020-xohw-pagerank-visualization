@@ -6,7 +6,9 @@ export interface State extends EntityState<Edge> {
   // additional entities state properties
 }
 
-export const adapter: EntityAdapter<Edge> = createEntityAdapter<Edge>();
+export const adapter: EntityAdapter<Edge> = createEntityAdapter<Edge>({
+  selectId: (e: Edge) => e.id,
+});
 
 export const initialState: State = adapter.getInitialState({
   // additional entity state properties

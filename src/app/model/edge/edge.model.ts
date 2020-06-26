@@ -1,5 +1,8 @@
-export interface Edge {
-  id: string;
-  source: string; // id of source node
-  target: string; // id of target node
+import { SimulationLinkDatum } from 'd3';
+import { Node } from '../node/node.model'
+
+export interface Edge extends SimulationLinkDatum<Node> {
+  id: number;
+  source: number; // id of source node
+  target: number; // id of target node
 }

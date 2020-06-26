@@ -32,7 +32,26 @@ export const getAllEdges = createSelector(
   fromEdge.selectAll
 );
 
+
 export const getSelectedNodes = createSelector(
   (state: State) => state.node,
   fromNode.getSelected
+);
+
+export const getVisibleNodes = createSelector(
+  (state: State) => state.node,
+  fromNode.getVisible,
+);
+
+export const getValidEdges = createSelector(
+  getAllEdges,
+  getVisibleNodes,
+  (edges, nodes) => {
+    return edges.filter(
+      (edge) => {
+        return nodes.some((n) => n.id === edge.source) &&
+          nodes.some((n) => n.id === edge.target);
+      }
+    );
+  }
 );

@@ -13,7 +13,11 @@ export enum NodeActionTypes {
   DeleteNode = '[Node] Delete Node',
   DeleteNodes = '[Node] Delete Nodes',
   ClearNodes = '[Node] Clear Nodes',
-  ToggleNodeSelection = '[Node] Toggle Node Selection'
+  ToggleNodeSelection = '[Node] Toggle Node Selection',
+  LoadNeighborNodes = '[Node] Load Neighbor Nodes',
+  LoadNeighborNodesError = '[Node] Load Neighbor Nodes Error',
+  ShowNode = '[Node] Show Node',
+  ShowSomeNodes = '[Node] Show Some Nodes'
 }
 
 export class LoadNodes implements Action {
@@ -61,13 +65,13 @@ export class UpdateNodes implements Action {
 export class DeleteNode implements Action {
   readonly type = NodeActionTypes.DeleteNode;
 
-  constructor(public payload: { id: string }) {}
+  constructor(public payload: { id: number }) {}
 }
 
 export class DeleteNodes implements Action {
   readonly type = NodeActionTypes.DeleteNodes;
 
-  constructor(public payload: { ids: string[] }) {}
+  constructor(public payload: { ids: number[] }) {}
 }
 
 export class ClearNodes implements Action {
@@ -77,7 +81,32 @@ export class ClearNodes implements Action {
 export class ToggleNodeSelection implements Action {
   readonly type = NodeActionTypes.ToggleNodeSelection;
 
-  constructor(public payload: { id: string }) {}
+  constructor(public payload: { id: number }) {}
+}
+
+export class LoadNeighborNodes implements Action {
+  readonly type = NodeActionTypes.LoadNeighborNodes;
+
+  constructor(public payload: { from: Node }) {}
+}
+
+export class LoadNeighborNodesError implements Action {
+  readonly type = NodeActionTypes.LoadNeighborNodesError;
+
+  constructor(public payload: { error: any }) {}
+}
+
+export class ShowNode implements Action {
+  readonly type = NodeActionTypes.ShowNode;
+
+  constructor(public payload: { node: Node }) {}
+}
+
+
+export class ShowSomeNodes implements Action {
+  readonly type = NodeActionTypes.ShowSomeNodes;
+
+  constructor(public payload: { from: Node, max: number }) {}
 }
 
 export type NodeActions =
@@ -91,4 +120,8 @@ export type NodeActions =
  | DeleteNode
  | DeleteNodes
  | ClearNodes
- | ToggleNodeSelection;
+ | ToggleNodeSelection
+ | LoadNeighborNodes
+ | LoadNeighborNodesError
+ | ShowNode
+ | ShowSomeNodes;

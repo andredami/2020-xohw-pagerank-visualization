@@ -5,14 +5,18 @@ import { NodeActions, NodeActionTypes } from './node.actions';
 
 export interface State extends EntityState<Node> {
   // additional entities state properties
-  selectedIds: string[];
+  selectedIds: number[];
+  visibleIds: number[];
 }
 
-export const adapter: EntityAdapter<Node> = createEntityAdapter<Node>();
+export const adapter: EntityAdapter<Node> = createEntityAdapter<Node>({
+  selectId: (n: Node) => n.id,
+});
 
 export const initialState: State = adapter.getInitialState({
   // additional entity state properties
-  selectedIds: []
+  selectedIds: [],
+  visibleIds: [],
 });
 
 export function reducer(
@@ -65,19 +69,34 @@ export function reducer(
 
     case NodeActionTypes.ToggleNodeSelection: {
       // add or remove a node with given id to selected node ids
-      if ((state.ids as string[]).includes(action.payload.id)) {
+      if ((state.ids as number[]).includes(action.payload.id)) {
         if (state.selectedIds.includes(action.payload.id)) {
           // add
           return {
             ...state,
-            selectedIds: state.selectedIds.filter(id => id !== action.payload.id)
+            selectedIds: [],
           };
         } else {
           // remove
           return {
             ...state,
-            selectedIds: [...state.selectedIds, action.payload.id]
+            selectedIds: [action.payload.id],
           };
+        }
+      } else {
+        return state;
+      }
+    }
+
+    case NodeActionTypes.ShowNode: {
+      if ((state.ids as number[]).includes(action.payload.node.id)) {
+        if (state.visibleIds.includes(action.payload.node.id) === false) {
+          return {
+            ...state,
+            visibleIds: [...state.visibleIds, action.payload.node.id],
+          };
+        } else {
+          return state;
         }
       } else {
         return state;
@@ -99,11 +118,21 @@ export const {
 
 export const getSelectedIds = (state: State) => state.selectedIds;
 
+export const getVisibleIds = (state: State) => state.visibleIds;
+
 /**
  * get selected nodes
  */
 export const getSelected = createSelector(
   getSelectedIds,
+  selectEntities,
+  (ids, entities) => {
+    return ids.map(id => entities[id]);
+  }
+);
+
+export const getVisible = createSelector(
+  getVisibleIds,
   selectEntities,
   (ids, entities) => {
     return ids.map(id => entities[id]);
