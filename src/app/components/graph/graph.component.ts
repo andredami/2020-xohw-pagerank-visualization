@@ -22,13 +22,21 @@ const FORCES = {
 
 const GRAPHICS = {
   WINDOW_MARGIN: 50,
-  NODE_R: 10,
+
+  NODE_R: 8,
   NODE_PADDING: 0,
-  NODE_NORMAL_STYLE: '#88f',
+  NODE_NORMAL_STYLE: '#ddd',
   NODE_SELECTED_STYLE: '#f88',
-  EDGE_THICKNESS: 2,
-  EDGE_STYLE: 'lightgray',
+  NODE_BORDER_COLOR: '#000',
+  NODE_ROOT_COLOR: 'red',
+  NODE_OPACITY: 0.8,
+
+  EDGE_THICKNESS: 1,
+  EDGE_STYLE: 'black',
+  EDGE_OPACITY: 0.2,
+
   TEXT_X_OFFSET: 2,
+  DEFAULT_OPACITY: 1
 };
 
 enum ACTION { ADD, REMOVE }
@@ -218,22 +226,25 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
 
   private drawGraph() {
     const graph = this.getGraph();
+    const selectedNodesIds = new Set(this.getGraph().selectedNodes.map(n => n.id));
     const context = this.graphContainer.nativeElement.getContext('2d');
 
     context.clearRect(0, 0, this.viewPort.width, this.viewPort.height);
     context.save();
 
+    // Edges;
     context.beginPath();
     graph.edges.forEach(drawLink);
     context.lineWidth = GRAPHICS.EDGE_THICKNESS;
     context.strokeStyle = GRAPHICS.EDGE_STYLE;
+    context.globalAlpha = GRAPHICS.EDGE_OPACITY;
     context.stroke();
+    context.globalAlpha = GRAPHICS.DEFAULT_OPACITY;
 
-    context.beginPath();
+    // Circles;
     graph.nodes.forEach(drawNode);
-    context.fillStyle = GRAPHICS.NODE_NORMAL_STYLE;
-    context.fill();
 
+    // Highlight the selected
     context.beginPath();
     graph.selectedNodes.forEach(drawTarget);
     context.lineWidth = GRAPHICS.NODE_R / 2;
@@ -252,9 +263,21 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
       context.lineTo(d[1].x, d[1].y);
     }
 
-    function drawNode(d) {
-      context.moveTo(d.x, d.y);
+    function drawNode(d: Node) {
+      context.beginPath();
       context.arc(d.x, d.y, GRAPHICS.NODE_R, 0, 2 * Math.PI);
+      // Border;
+      context.strokeStyle = GRAPHICS.NODE_BORDER_COLOR;
+      context.stroke();
+      // Fill;
+      context.globalAlpha = GRAPHICS.NODE_OPACITY;
+      if (!selectedNodesIds.has(d.id)) {
+        context.fillStyle = GRAPHICS.NODE_NORMAL_STYLE;
+      } else {
+        context.fillStyle = GRAPHICS.NODE_ROOT_COLOR;
+      }
+      context.fill();
+      context.globalAlpha = GRAPHICS.DEFAULT_OPACITY;
     }
 
     function drawTarget(d) {
