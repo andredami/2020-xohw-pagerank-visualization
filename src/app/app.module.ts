@@ -1,5 +1,5 @@
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
+import { NgModule, APP_INITIALIZER } from '@angular/core';
 
 import { AppComponent } from './app.component';
 import { StoreModule } from '@ngrx/store';
@@ -12,14 +12,26 @@ import { HttpClientModule } from '@angular/common/http';
 import { EffectsModule } from '@ngrx/effects';
 import { GraphEffects } from './services/graph/graph.effects';
 
+import { CacheManagerService } from './services/cache-manager/cache-manager.service';
+import { PagerankEffects } from './services/pagerank/pagerank.effects';
+import { SearchBarComponent } from './components/search-bar/search-bar.component';
+import { FormsModule } from '@angular/forms';
+import { MaterialModule } from './material.module';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+
+
 @NgModule({
   declarations: [
     AppComponent,
     GraphComponent,
-    GraphPageComponent
+    GraphPageComponent,
+    SearchBarComponent
   ],
   imports: [
     BrowserModule,
+    FormsModule,
+    MaterialModule,
+    BrowserAnimationsModule,
     StoreModule.forRoot(reducers, {
       metaReducers,
       runtimeChecks: {
@@ -33,9 +45,15 @@ import { GraphEffects } from './services/graph/graph.effects';
     }),
     !environment.production ? StoreDevtoolsModule.instrument() : [],
     HttpClientModule,
-    EffectsModule.forRoot([GraphEffects]),
+    EffectsModule.forRoot([GraphEffects, PagerankEffects]),
   ],
-  providers: [],
+  providers: [CacheManagerService,
+    {
+      provide: APP_INITIALIZER,
+      useFactory: (m: CacheManagerService) => (() => m.init()),
+      deps: [CacheManagerService],
+      multi: true
+    }],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

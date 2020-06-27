@@ -1,0 +1,11 @@
+.form-a {
+  min-width: 150px;
+  max-width: 500px;
+  width: 100%;
+  padding: 10px;
+  border-bottom: 1px solid black;
+}
+
+.form-full-width {
+  width: 100%;
+}

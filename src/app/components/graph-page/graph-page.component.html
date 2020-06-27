@@ -1,6 +1,14 @@
+<app-search-bar [pageranks]="(pageranks$ | async)"></app-search-bar>
+
 <app-graph
   [nodes]="(nodes$ | async)"
   [selectedNodes]="(selectedNodes$ | async)"
   [edges]="(edges$ | async)"
+  [pageranks]="(pageranks$ | async)"
   (select)="onToggleSelection($event)"
 ></app-graph>
+
+<div>
+  <button mat-raised-button #ClearGraph>Clear all</button>
+  <button mat-raised-button #ClearPagerank [disabled]="false">Remove pageranks</button>
+</div>

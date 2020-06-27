@@ -1,6 +1,8 @@
-export const CONFIGURATION = {
-  MAX_NEIGHBORS: 10,
+const CONFIGURATION = {
+  MAX_NEIGHBORS: 3,
   RENDERING: {
     FPS: 60,
   },
+  MAX_PAGERANK_RESULTS: 10
 };
+export default CONFIGURATION;

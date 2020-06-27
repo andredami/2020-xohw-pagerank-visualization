@@ -15,6 +15,7 @@ export enum NodeActionTypes {
   ClearNodes = '[Node] Clear Nodes',
   ToggleNodeSelection = '[Node] Toggle Node Selection',
   LoadNeighborNodes = '[Node] Load Neighbor Nodes',
+  LoadNeighborNodesFromId = '[Node] Load Neighbor Nodes From Id',
   LoadNeighborNodesError = '[Node] Load Neighbor Nodes Error',
   ShowNode = '[Node] Show Node',
   ShowSomeNodes = '[Node] Show Some Nodes'
@@ -90,6 +91,12 @@ export class LoadNeighborNodes implements Action {
   constructor(public payload: { from: Node }) {}
 }
 
+export class LoadNeighborNodesFromId implements Action {
+  readonly type = NodeActionTypes.LoadNeighborNodesFromId;
+
+  constructor(public payload: { from: number }) {}
+}
+
 export class LoadNeighborNodesError implements Action {
   readonly type = NodeActionTypes.LoadNeighborNodesError;
 
@@ -122,6 +129,7 @@ export type NodeActions =
  | ClearNodes
  | ToggleNodeSelection
  | LoadNeighborNodes
+ | LoadNeighborNodesFromId
  | LoadNeighborNodesError
  | ShowNode
  | ShowSomeNodes;

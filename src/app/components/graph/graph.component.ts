@@ -9,8 +9,9 @@ import { Edge } from 'src/app/model/edge/edge.model';
 import { firstNames, lastNames } from 'src/app/model/names';
 import { forceAttract } from 'd3-force-attract';
 import { Subject, concat, of, EMPTY, Subscription } from 'rxjs';
+import { Pagerank } from 'src/app/model/pagerank/pagerank.model'
 import { concatMap, delay } from 'rxjs/operators';
-import { CONFIGURATION } from 'src/app/app.config';
+import CONFIGURATION from 'src/app/app.config';
 
 const FORCES = {
   LINK_STIFFNESS: 0.40,
@@ -34,7 +35,7 @@ const GRAPHICS = {
 
   EDGE_THICKNESS: 1,
   EDGE_STYLE: 'black',
-  EDGE_OPACITY: 0.2,
+  EDGE_OPACITY: 0.4,
 
   TEXT_X_OFFSET: 2,
   NAME_Y_OFFSET: -2,
@@ -56,11 +57,15 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
   @Input() nodes: Node[] = [];
   @Input() selectedNodes: Node[] = [];
   @Input() edges: Edge[] = [];
+  @Input() pageranks: Pagerank[] = [];
   @ViewChild('graphContainer') graphContainer;
 
   private simulation = d3.forceSimulation();
   private renderingQueue = new Subject<{action: ACTION, node: Node}>();
   private renderingSub: Subscription;
+
+  // Store result of last PageRank;
+  private lastPagerank: Pagerank = undefined;
 
   // Store "fake" names given to each vertex;
   private namesDict = new Map();
@@ -105,7 +110,8 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   private doRender(renderAction?: {action: ACTION, node: Node}) {
-    const nodes: Node[] = this.simulation.nodes().filter(isNode);
+    const nodesMap: Map<number, Node> = new Map(this.simulation.nodes().filter(isNode).map(n => [n.id, n]));
+    const nodes: Node[] = Array.from(nodesMap.values());
 
     if (renderAction) {
 
@@ -230,15 +236,25 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
     }
   }
 
+  private updateLastPagerank() {
+    if (!this.pageranks.length || !this.selectedNodes.length) { this.lastPagerank = undefined; return; }
+    const id = this.selectedNodes[0].id;
+    this.lastPagerank = this.pageranks.filter(p => p.id === id)[0];
+  }
+
   private drawGraph() {
     const graph = this.getGraph();
+    const lastPagerank = this.lastPagerank;
+
     const namesDict = this.namesDict;
     const selectedNodesIds = new Set(this.getGraph().selectedNodes.map(n => n.id));
     const context = this.graphContainer.nativeElement.getContext('2d');
 
-    // Define a color scale. TODO: this should be between the min and max value of pagerank found;
+    // Define a color scale.
+    const minVal = lastPagerank != undefined ? lastPagerank.min_rank: 0;
+    const maxVal = lastPagerank != undefined ? lastPagerank.max_rank: 1;
     const colorRange = d3.scaleLinear()
-    .domain([0, 10]) // This should be min and max pagerank found;
+    .domain([maxVal, minVal]) // This should be min and max pagerank found;
     .range([0.8, 0.2]);
 
     context.clearRect(0, 0, this.viewPort.width, this.viewPort.height);
@@ -262,11 +278,12 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
     context.font = '14px Lato';
     context.textBaseline = 'left';
     graph.nodes.forEach(writeText);
-    // TODO: Write PageRank label nodes that have one;
-    context.fillStyle = GRAPHICS.NODE_SELECTED_STYLE;
-    context.font = '10px Lato';
-    graph.nodes.filter(n => n.id % 2).forEach(writeProperty)
-
+    // Write PageRank label nodes that have one;
+    if (lastPagerank != undefined) {
+      context.fillStyle = GRAPHICS.NODE_SELECTED_STYLE;
+      context.font = '10px Lato';
+      graph.nodes.filter(n => lastPagerank.results.has(n.id)).forEach(writeProperty)
+    }
     context.restore();
 
     // Nodes and edges are drawn one-at-a-time.
@@ -276,13 +293,19 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
       context.beginPath();
       context.moveTo(d[0].x, d[0].y);
       context.lineTo(d[1].x, d[1].y);
-      // Set edge style;
-      // TODO: we should add fake edges between the pagerank starting node and the top-k,
-      //   and use dashed lines if the edge doens't exist in the graph.
-      //   This can be checked in advance and stored in an edge attribute, for example;
-      if (d[0].id % 2 && d[1].id % 2) {
-        context.setLineDash([1, 3]);
-      }
+      context.lineWidth = GRAPHICS.EDGE_THICKNESS;
+      context.strokeStyle = GRAPHICS.EDGE_STYLE;
+      context.globalAlpha = GRAPHICS.EDGE_OPACITY;
+      context.stroke();
+      context.globalAlpha = GRAPHICS.DEFAULT_OPACITY;
+      context.setLineDash([]);
+    }
+
+    function drawExtraLink(d) {
+      context.beginPath();
+      context.moveTo(d[0].x, d[0].y);
+      context.lineTo(d[1].x, d[1].y);
+      context.setLineDash([1, 3]);
       context.lineWidth = GRAPHICS.EDGE_THICKNESS;
       context.strokeStyle = GRAPHICS.EDGE_STYLE;
       context.globalAlpha = GRAPHICS.EDGE_OPACITY;
@@ -301,15 +324,18 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
       context.globalAlpha = GRAPHICS.NODE_OPACITY;
       if (selectedNodesIds.has(d.id)) {
         context.fillStyle = GRAPHICS.NODE_ROOT_COLOR;
-      } else if (d.id % 4 == 0) {
-        // TODO: this should be replaced with the PageRank value, 
-        //   i.e. color only values with pagerank using the color scale;
-        context.fillStyle = d3.interpolateReds(colorRange(d.id % 10));
+      } else if (lastPagerank != undefined && lastPagerank.results.has(d.id)) {
+        context.fillStyle = d3.interpolateReds(colorRange(lastPagerank.results.get(d.id)));
       } else {
         context.fillStyle = GRAPHICS.NODE_NORMAL_STYLE;
       }
       context.fill();
       context.globalAlpha = GRAPHICS.DEFAULT_OPACITY;
+
+      // Add extra edge between pagerank results;
+      if (lastPagerank != undefined && lastPagerank.results.has(d.id)) {
+        drawExtraLink([d, graph.nodes.find(v => v.id == lastPagerank.id)])
+      }
     }
 
     function drawTarget(d) {
@@ -323,7 +349,7 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
 
     function writeProperty(d) {
       // TODO: replace with PR value
-      context.fillText((d.id / 1000).toFixed(4), d.x + GRAPHICS.NODE_R + GRAPHICS.TEXT_X_OFFSET, d.y + GRAPHICS.PROPERTY_Y_OFFSET);
+      context.fillText((lastPagerank.results.get(d.id) * 100).toFixed(4), d.x + GRAPHICS.NODE_R + GRAPHICS.TEXT_X_OFFSET, d.y + GRAPHICS.PROPERTY_Y_OFFSET);
     }
 
     // Associate a random name to each vertex;
@@ -351,6 +377,9 @@ export class GraphComponent implements OnInit, OnChanges, AfterViewInit {
         nodes.find(node => node.id === edge.target),
       ];
     }).filter(edge => edge[0] !== undefined && edge[1] !== undefined);
+
+    this.updateLastPagerank();
+
     return { nodes, edges, selectedNodes };
   }
 }
